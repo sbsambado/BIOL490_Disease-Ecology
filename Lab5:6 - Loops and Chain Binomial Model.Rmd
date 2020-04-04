@@ -1,0 +1,195 @@
+---
+title: "Lab 5 & 6 - Loops, functions, chain binomial"
+author: "sbsambado"
+date: "3/27/2020"
+output: html_document
+---
+
+BIOL 490 is a class taught by Dr. Andrea Swei, that I was a teaching assistant for
+
+Two types of loops:
+1. for-loop: runs a process several times for X number of times, when it's done it exits the loop and continues on to the rest of the program
+
+2. while-loops: repeats some function (loop) until a defined criteria or condition is met. A while loop specify that as long as a parameter x is less than some value, the function will continue to loop.
+
+for-loop examples
+```{r}
+Popn <- 1 # create initial value
+Gen <- 10 # number of generations
+
+for( n in 2:Gen) {
+  Popn[n] <- Popn[n-1] * 2 # create vector to put values from 2 to Gen
+}
+Popn
+
+plot(1:Gen, Popn, type = 'b')
+
+# Example 2
+
+# Calculate the circumference of a circle using value of previous time point
+
+circ <- 1 
+
+for(n in 2:Gen) {
+  circ[n] <- 3.14*circ[n-1]*2
+}
+circ
+
+plot(1:Gen, circ, type = 'b')
+
+# Exercise 3
+
+# Calculate the square of the Popn vector
+Popn.squared = NULL
+
+for(n in 1:Gen) {
+  Popn.squared[n] <- Popn[n]^2
+}
+Popn.squared
+
+plot(1:Gen, Popn.squared, type = 'b')
+
+# Exercise 4
+
+# pop starts at 1 and grows at a rate of 40% per year for 20 generations
+pop <- 1
+gen <- 20
+for(n in 2:gen) {
+  pop[n] <- pop[n-1]*1.4
+}
+pop
+
+plot(1:gen, pop, type = 'b')
+```
+
+
+While-loop examples
+```{r}
+# Example 1
+
+pop.vec = pop.now <- 1
+count <- 1 # iterations
+
+while(pop.now <=25000) {
+  pop.now <- pop.now*2 # growth rate for each generation
+  pop.vec <- c(pop.vec, pop.now) # keeps adding on the most recent pop.now
+  count <- count + 1 # keeps track of number of gererations to exceed 2500
+}
+pop.vec
+
+# modify code to see how many cycles to exceed 1 million
+pop.vec = pop.now <- 1
+count <- 1 # iterations
+
+while(pop.now <=1000000) {
+  pop.now <- pop.now*2 # growth rate for each generation
+  pop.vec <- c(pop.vec, pop.now) # keeps adding on the most recent pop.now
+  count <- count + 1 # keeps track of number of gererations to exceed 2500
+}
+pop.vec
+count # how many cycles to reach 1 million
+
+```
+
+Creating functions
+```{r}
+# myfx <- function(x,y,z) { # arguments
+#   expression_1 # what function will do with arguments
+#   expression_2
+#   expression_3
+#   Output # if you want to output automatically
+# }
+
+# function to calculate mean
+ave <- function(x) {
+  mu <- sum(x)/length(x)
+  mu
+}
+
+# now create a vector to run function with
+vec <- c(2,8,10,3,7,8,4,23)
+
+ave(vec)
+mean(vec) # should match ave(vec)
+```
+
+Write a function to produce 95% Credible intervals assuming a normal distribution
+
+CI at 95% level assume that 2.5% of curve is on either side of the distribution of the mean and is calculated as mean +/- 1.96x standard error (se) of the effect size
+```{r}
+CI95 <- function(x) {
+  mean <- mean(x)
+  sd <- sd(x)
+  n <- length(x)
+  se <- sd/sqrt(n)
+  
+  CI.vec <- c((mean-(1.96*se)), mean, (mean + (1.96*se)))
+  names(CI.vec) <- c('2.5%', 'Mean', '97.5%')
+  CI.vec
+}
+
+fake_data <- c(10,3,6,8,9,8,54,5,2,3,43,25,2,5,2,45,66,78,9,80,345,56,7,8,9)
+
+CI95(fake_data)
+```
+
+# The Chain Binomial Model
+Chain Binomial model is based on the assumption of discrete generations and is basically a difference equation model
+- population grows in steps and not continuously
+- not very applicable for many things, but maybe insects that molt or species with 1 reproductive cycle per year
+- but, a model should only be as complicated as it needs to be
+
+chain binomial model (cbm) is a simple stochastic model with discrete generations
+- each generation, new infections are distributed accroding to thee binomial distribution 
+- binomial distribution describes the probaility distribution function on an event that has only  1 of 2 outcomes, thus binomial
+
+The number of new infections, I, is binomially distributed
+The number of trials is equal to number of susceptibles, S_t, and the probability of infectio, p = 1 - exp(-beta*I_t)
+```{r}
+# create a chain binomial function
+
+# one step model
+chain.binomial.onestep <- function(x, params) {
+  S <- x[1]
+  I <- x[2]
+  beta <- params['beta']
+  new.I <- rbinom(n =1, size = S, prob=1-exp(-beta*I))
+  new.S <- S - new.I
+  c(S = new.S, I = new.I)
+  
+}
+
+
+# one step not practical, now make a multi-step model
+
+chain.binomial.model <- function(x, params, nstep) {  
+  X <- array(dim = c(nstep+1, 3))
+  colnames(X) <- c('time', 'S', 'I')
+  X[1,1] <- 0
+  X[1, -1] <- x
+  
+  for(k in 1:nstep) {
+    X[k+1, 1] <- k
+    X[k+1, -1] <- x <- chain.binomial.onestep(x, params)
+  }
+      X
+}
+
+# initial values
+set.seed(38499583)
+nsims <- 10
+nstep <- 20
+xstart <- c(S = 200, I = 5)
+params <- c(beta = 0.1)
+x <- vector(mode = 'list', length = nsims)
+for (k in 1:nsims) {
+  x[[k]] <- as.data.frame(chain.binomial.model(xstart, params, nstep))
+}
+plot(c(0,6), c(0,200), type = 'n', xlab = 'generation', ylab = 'incidence')
+for(k in 1:nsims) {
+  lines( I ~ time, data = x[[k]], col = k, type = 'o')
+}
+
+
+```
+
