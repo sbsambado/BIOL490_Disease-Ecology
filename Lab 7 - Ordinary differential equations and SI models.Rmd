@@ -1,0 +1,95 @@
+---
+title: "Lab 7 - Ordinary Differential Equations and SI models"
+author: "sbsambado"
+date: "4/4/2020"
+output: html_document
+---
+
+Ordinary differential equations (ODEs) govern how one dependent variable (population size or number of infectious individuals) changes relative to changes in some other independent variable (e.g. time). 
+
+ODEs can be used to mathematically describe mechanistic, biological relationships between dependent and independent variables and to project this relationship in time in order to understand the dunamics of the dependent variables.
+
+Once you have the determined equations, the next step is to investigate the dynamics of your model (e.g. changes over time) for a given set of parameter values.
+
+Important: deSolve (package), ode() (function)
+- odes() main arguments are the starting values (y), the times at which you want to compute the values of the variables you are interested in (times), a derivative function (func), and some parameters (parms)
+
+- 'func' must take as its first 3 arguments the current time (t), the current values of the variables (y), and a vector containing the parameter values. It also must return a list (using list(item1)) where the item1 is the vector of derivative calculated at the current time and system state
+
+Examples of ODE functions
+```{r}
+
+#install.packages('deSolve')
+#library(deSolve)
+
+# Exercise 1 : logistic growth
+
+LogisGrow <- function(t, y, params) {
+  N <- y[1]
+  dN <- params[1] * N * (1 - N/params[2])
+  list(dN)
+}
+
+# r = params[1]
+# K = params[2]
+
+logistic <- as.data.frame(ode(y = c(N = 0.1), times = seq(0,100, by = 0.1), func = LogisGrow, parms = c(r = 0.9, K = 5)))
+
+head(logistic)
+
+plot(N ~ time, data = logistic, main = 'logistic growth model', col = 'navy' )
+```
+
+# SI Models
+
+-two, coupled ODEs following two dependent variables of interest (S, I)
+- I/N proportion infected (frequency dependent)
+- assumes that population is a closed system (N is constant) N = S + I
+```{r}
+tInt <- seq(0, 25, by = 0.5)
+pars <- c(beta = 0.75)
+Initial <- c(S = 4999, I = 1)
+
+SIfun <- function(t, y, parms) {
+  with(as.list(c(y, parms)), { # with() enables you to write out your ODE equations in familiar way
+    dS <- -beta * S * (I/(S + I)) # because S + I = N
+    dI <- beta * S * (I/(S + I))
+    ODEs <- c(dS, dI)
+    list(ODEs)
+  })
+}
+
+SIout <- as.data.frame(ode(y = Initial, t = tInt, func = SIfun, parms = pars))
+head(SIout)
+
+par(mfrow = c(1,2)) # creating plot screen with 2 images
+plot(S ~ time, data = SIout, ylab = 'number', col = 'navy')
+points(I ~ time, data = SIout, ylab = 'number', col = 'red')
+legend('right', bg = 'gray95', c('S','I'), pch = 1, col = c('navy', 'red'))
+plot(I~S, data = SIout, ylab = 'susceptibles', xlab = 'infected', main = 'proportion')
+
+## repeat process with changed values of beta
+
+# beta = 0.25 
+pars1 <- c(beta = 0.25)
+SIout1 <- as.data.frame(ode(y = Initial, t = tInt, func = SIfun, parms = pars1))
+
+# beta = 0.5
+pars2 <- c(beta = 0.5)
+SIout2 <- as.data.frame(ode(y = Initial, t = tInt, func = SIfun, parms = pars2))
+
+# beta = 0.95
+pars3 <- c(beta = 0.95)
+SIout3 <- as.data.frame(ode(y = Initial, t = tInt, func = SIfun, parms = pars3))
+
+# rate of Infected over time
+
+plot(I ~ time, data = SIout1, ylab = 'number', col = 'navy')
+points(I ~ time, data = SIout2, col = 'red')
+points(I ~ time, data = SIout3, col = 'green')
+legend('topleft', bg = 'gray95', c('beta = .25','beta = .5','beta = .95' ),
+       pch = 1, col = c('navy', 'red', 'green'))
+
+
+```
+
