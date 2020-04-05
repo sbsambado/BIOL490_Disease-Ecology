@@ -1,0 +1,29 @@
+---
+title: "Lab 10 - R0"
+author: "sbsambado"
+date: "4/4/2020"
+output: html_document
+---
+
+Anderson and May's concept of a basic reproductive numner, R0
+- R0 is unitless, not a rate
+- R0: the average number of secondary infections that occur when one infective individual is exposed to an entirely susceptible host population
+- R0, reproductive rate in population ecology, represents the growth rate ofa population
+- R0 > 1, population is growing
+- R0 < 1, population is declining
+
+Assumptions of R0
+- population is wholly susceptible with no immunity
+- population is well-mixed in a homogeneous ways (no sub-networks)
+R0 = 1, disease is at an endemic steady state
+
+Estimating R0 can be done empirically or theoretically. Disease incidence data can be used to calculate R0.
+
+R0 can be estimated as the transmission rate over the recovery rate
+```{r}
+# inferring different R0s, plot them
+
+
+```
+
+
