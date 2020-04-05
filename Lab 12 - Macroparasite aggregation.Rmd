@@ -1,0 +1,67 @@
+---
+title: "Lab 12 - Macroparasite aggregation"
+author: "sbsambado"
+date: "4/4/2020"
+output: html_document
+---
+
+Why are macroparasites aggregated among hosts?
+
+This question comes down to differences in the transmission rate of the pathogen. In a regular SIR model, the rate that a given susceptible individual becomes infected is beta * I
+
+If every host has the same probability of becoming infected, then beta is the same for all hosts. For instance, everyone could have a 10% chance of becoming infected at any particular moment.This would follow a poisson distribution.
+
+But, beta, is actually a product of the average per capita contact rate between individuals (c) and the average probability of successful transmission given contact (v)
+beta = c * v
+
+Generate a poisson distribution based on parameter values (c and v). In order to generate a poisson distribution, you need to know the mean in a poisson distribution (aka lambda) is determined by a rate parameter, r, multiplied by the length of time that the process has been occuring, t.
+- In this situation the rate in question is the transmission rate, beta, which we have defined as beta = c * v
+- Therefore, lambda is defined by beta *t (rate = beta = c*v)
+```{r}
+# assume contact rate is 50%
+c = 0.5
+
+# probability of transmission if there is contact is 20%
+v = 0.2
+
+# lambda
+t = 20
+lambda = (c*v)*t
+
+help(rpois)
+
+# create a vector of numbers drawn from a poisson distribution that represents the number of parasites in each individual host for 1000 hosts
+parasites <- rpois(n = 1000, lambda = lambda)
+
+# quantify whether the occurrences are clustered together or dispersed (is there high variance in how many parasites a host has, or do most hosts have ~same number of parasites?)
+var(parasites)/mean(parasites)
+
+hist(parasites, right = FALSE, ylab = 'number of hosts with X parasites',
+     xlab = 'number of parasites per host')
+```
+
+Above chunk assumed that the chance of becoming infected was exactly the same between everybody. But what if individuals had different probabilities of getting infected? Beta varies among hosts?
+- Poisson distribution is not right distribution then. 
+- Compound distribution where the infection is still a random process but now the rate parameter (B*t = lambda) is no longer constant. Instead, the rate parameter must also vary in a random way
+- now rate parameter is a drawn from gamma distribution
+```{r}
+rate <- rgamma(10000, shape = 1, scale = 10)
+parasitesA <- rpois(n = 10000, lambda = rate)
+
+hist(parasitesA, right = FALSE, ylab = 'number of hosts with X parasites')
+
+# variance to mean ratio
+var(parasitesA)/mean(parasitesA)
+```
+
+Does the 80/20 rule hold up? Sort parasites from highest to lowest number
+```{r}
+parasitesB <- sort(parasitesA, decreasing = T)
+
+# 20% of individuals out of 10000 is 2000, calculate sum of first 2000
+aggregates <- sum(parasitesB[1:2000])
+
+heavily_tot <-aggregates/10000
+
+```
+
