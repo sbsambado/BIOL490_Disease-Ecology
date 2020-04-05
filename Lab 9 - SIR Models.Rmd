@@ -1,0 +1,91 @@
+---
+title: "Lab 9 - SIR Models"
+author: "sbsambado"
+date: "4/4/2020"
+output: html_document
+---
+
+SIR epidemic models
+
+The rate that individuals move from one category to the next can be described using ODEs. These types of models are deterministic which means there is no randomness or stochasticity involved.
+- If you simulate a model multiple times with the same starting conditions, you will always get the same outcome
+-- Contrast to a stochastic model that do involve randomness
+- ODEs also describe phenomena in continuous time or smooth time, as opposed to discrete time
+
+Transitions between S-I-R
+1. Transition from S to I
+- Borrowing from the principles of kinetics, we assume that the rate of contact between S and I is proportional to their respective population numbers
+- The rate that S become I is proportional to S*I
+- Because not every encounter with an I individual leads to disease transmission, a transmission term (beta) is included
+= -beta*S*I
+
+2. Transition from I to R
+- I individuals become R at a constant probability which can be denoted by a constant per capita recovery rate (gamma)
+= gamma*I
+
+Modeling SIR
+- Assuming population is closed
+- flu epidemic are realtively short
+- N = S + I + R
+
+Numerical simulation of the basic SIR model
+```{r}
+# library(deSolve)
+# lsoda()
+
+SIR_mod <- function(dt, inits, parms) {
+  with(as.list(c(parms, inits)), { #with(as.list()) variables of model are taken from vector
+    dS = -beta*S*I
+    dI = beta*S*I - gamma*I
+    dR = gamma*I
+    return(list(c(dS, dI, dR)))
+  })
+}
+
+# supply inputs (dt, inits, parms)
+dt <- seq(0, 100, by = 0.1)
+S0 = 499
+I0 = 1
+R0 = 0
+inits <- c(S = S0, I = I0, R = R0)
+
+beta <- 1e-3
+gamma <- 1e-1
+parms <- c(beta = beta, gamma = gamma)
+
+simulation <- as.data.frame(ode(y = inits, times = dt, func = SIR_mod, 
+                                parms = parms))
+
+head(simulation)
+tail(simulation)
+
+matplot(simulation[,-1], type = 'l', xlab = 'time', ylab = 'population',
+        lty = 1:2, col = c('green', 'red','blue'), lwd = 2)
+legend('topright', c('S', 'I', 'R'), lty = 1:2, 
+       col =c('green', 'red', 'blue'), lwd = 2)
+```
+
+Exercise 4: 2004 avian influenza
+```{r}
+# vary transmission term to 0.1 and 0.005 and plot changes in I over time
+
+# create sim2 with beta = 0.1
+beta2 <- 0.1
+parms <- c(beta = beta2, gamma = gamma)
+
+sim2 <- as.data.frame(ode(y = inits, times = dt, func = SIR_mod, 
+                                parms = parms))
+
+# create sim3 with beta = 0.005
+beta3 <- 0.005
+parms <- c(beta = beta3, gamma = gamma)
+
+sim3 <- as.data.frame(ode(y = inits, times = dt, func = SIR_mod, 
+                                parms = parms))
+matplot(sim2[,3], type = 'l', xlab = 'time', ylab = 'Infected',
+        lty = 1, col = 'red', lwd = 2)
+lines(sim3[,3], type = 'l', col = 'blue', lwd = 2)
+legend('topright', c('beta = 0.1', 'beta = 0.005'),
+       col = c('red', 'blue'), lwd = 2)
+```
+
